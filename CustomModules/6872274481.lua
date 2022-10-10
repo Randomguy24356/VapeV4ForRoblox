@@ -5956,7 +5956,7 @@ runcode(function()
 					repeat
 						task.wait(0.03)
 						if (GuiLibrary["ObjectsThatCanBeSaved"]["Lobby CheckToggle"]["Api"]["Enabled"] == false or matchState ~= 0) and Multiaura["Enabled"] then
-							local plrs = GetAllNearestHumanoidToPosition(true, 18.8, 1, false)
+							local plrs = GetAllNearestHumanoidToPosition(true, 300, 1, false)
 							for i,plr in pairs(plrs) do
 								local plrtype, plrattackable = WhitelistFunctions:CheckPlayerType(plr.Player)
 								if plrattackable then 
