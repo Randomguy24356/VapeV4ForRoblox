@@ -5956,7 +5956,7 @@ runcode(function()
 					repeat
 						task.wait(0.03)
 						if (GuiLibrary["ObjectsThatCanBeSaved"]["Lobby CheckToggle"]["Api"]["Enabled"] == false or matchState ~= 0) and Multiaura["Enabled"] then
-							local plrs = GetAllNearestHumanoidToPosition(true, 300, 1, false)
+							local plrs = GetAllNearestHumanoidToPosition(true, (MultiauraVal), 1000)
 							for i,plr in pairs(plrs) do
 								local plrtype, plrattackable = WhitelistFunctions:CheckPlayerType(plr.Player)
 								if plrattackable then 
@@ -5972,6 +5972,13 @@ runcode(function()
         end,
         ["HoverText"] = "Attack players around you\nwithout aiming at them."
     })
+    MultiauraVal = Multiaura.CreateSlider({
+		["Name"] = "Range",
+		["Min"] = 20,
+		["Max"] = 200,
+		["Default"] = 20,
+		["Function"] = function() end
+	})
 end)
 
 runcode(function()
