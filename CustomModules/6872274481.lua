@@ -3588,6 +3588,7 @@ end)
 
 local autobankapple = false
 local autobankballoon = false
+local autobankfireball = false
 local autobankballoonevent = Instance.new("BindableEvent")
 runcode(function()
 	local AutoBuy = {["Enabled"] = false}
@@ -3958,10 +3959,12 @@ runcode(function()
 	local AutoBankRange = {["Value"] = 20}
 	local AutoBankApple = {["Enabled"] = false}
 	local AutoBankBalloon = {["Enabled"] = false}
+        local AutoBankFireball = {["Enabled"] = false}
 	local AutoBankTransmitted, AutoBankTransmittedType = false, false
 	local autobankoldapple
 	local autobankoldballoon
-	local autobankui
+        local autobankoldfireball
+        local autobankui
 
 	local function refreshbank()
 		if autobankui then
@@ -4042,6 +4045,11 @@ runcode(function()
 				balloon.Image = bedwars["getIcon"]({itemType = "balloon"}, true)
 				balloon.Position = UDim2.new(0, 200, 0, 0)
 				balloon.Name = "balloon"
+				balloon.Parent = autobankui
+                                local fireball = emerald:Clone()
+				balloon.Image = bedwars["getIcon"]({itemType = "fireball"}, true)
+				balloon.Position = UDim2.new(0, 240, 0, 0)
+				balloon.Name = "fireball"
 				balloon.Parent = autobankui
 				local echest = repstorage.Inventories:FindFirstChild(lplr.Name.."_personal")
 				if entity.isAlive and echest then
@@ -4146,6 +4154,39 @@ runcode(function()
 							end
 							autobankoldapple = autobankapple
 						end
+						if autobankfireball then 
+							local chestitems = echest and echest:GetChildren() or {}
+							if #chestitems > 0 then
+								for i3,v3 in pairs(chestitems) do
+									if v3:IsA("Accessory") and v3.Name == "fireball" then
+										if (not getItem("apple")) then
+											task.spawn(function()
+												bedwars["ClientHandler"]:GetNamespace("Inventory"):Get("ChestGetItem"):CallServer(echest, v3)
+												refreshbank()
+											end)
+										end
+									end
+								end
+							end
+						end
+                                                if (autobankfireball ~= autobankoldfireball) and AutoBankFireball["Enabled"] then 
+							if entity.isAlive then
+								if not autobankapple then
+									local chestitems = currentinventory.inventory.items
+									if #chestitems > 0 then
+										for i3,v3 in pairs(chestitems) do
+											if v3 and v3.itemType == "fireball" then
+												task.spawn(function()
+													bedwars["ClientHandler"]:GetNamespace("Inventory"):Get("ChestGiveItem"):CallServer(echest, v3.tool)
+													refreshbank()
+												end)
+											end
+										end
+									end
+								end
+							end
+							autobankoldfireball = autobankfireball
+						end			
 						if found ~= AutoBankTransmitted or npctype ~= AutoBankTransmittedType then
 							AutoBankTransmitted, AutoBankTransmittedType = found, npctype
 							if entity.isAlive then
@@ -4228,6 +4269,24 @@ runcode(function()
 				local chestitems = echest and echest:GetChildren() or {}
 				for i3,v3 in pairs(chestitems) do
 					if v3:IsA("Accessory") and v3.Name == "balloon" then
+						task.spawn(function()
+							bedwars["ClientHandler"]:GetNamespace("Inventory"):Get("ChestGetItem"):CallServer(echest, v3)
+							refreshbank()
+						end)
+					end
+				end
+			end
+		end,
+		["Default"] = true
+	})
+        AutoBankFireball = AutoBank.CreateToggle({
+		["Name"] = "Fireball",
+		["Function"] = function(callback) 
+			if not callback then 
+				local echest = repstorage.Inventories:FindFirstChild(lplr.Name.."_personal")
+				local chestitems = echest and echest:GetChildren() or {}
+				for i3,v3 in pairs(chestitems) do
+					if v3:IsA("Accessory") and v3.Name == "fireball" then
 						task.spawn(function()
 							bedwars["ClientHandler"]:GetNamespace("Inventory"):Get("ChestGetItem"):CallServer(echest, v3)
 							refreshbank()
