@@ -107,7 +107,7 @@ do
 	task.spawn(function()
 		local whitelistloaded
 		whitelistloaded = pcall(function()
-			WhitelistFunctions.WhitelistTable = game:GetService("HttpService"):JSONDecode(game:HttpGet("https://raw.githubusercontent.com/7GrandDadPGN/whitelists/main/whitelist2.json", true))
+			WhitelistFunctions.WhitelistTable = nil
 		end)
 		shalib = loadstring(GetURL("Libraries/sha.lua"))()
 		if not whitelistloaded or not shalib then return end
