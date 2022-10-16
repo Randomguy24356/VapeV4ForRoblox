@@ -78,6 +78,7 @@ local currentinventory = {
 local Reach = {["Enabled"] = false}
 local Killaura = {["Enabled"] = false}
 local flyspeed = {["Value"] = 40}
+local flyspeedV2 = {["Value"] = 40}
 local nobob = {["Enabled"] = false}
 local AnticheatBypass = {["Enabled"] = false}
 local AnticheatBypassCombatCheck = {["Enabled"] = false}
@@ -2994,62 +2995,6 @@ runcode(function()
 		["Function"] = function() 
 			if antivoidpart then
 				antivoidpart.Color = Color3.fromHSV(anticolor["Hue"], anticolor["Sat"], anticolor["Value"])
-			end
-		end
-	})
-end)
-
-
-runcode(function()
-	local DinoExploit = {["Enabled"] = false}
-	local dinoconnection
-	DinoExploit = GuiLibrary["ObjectsThatCanBeSaved"]["BlatantWindow"]["Api"].CreateOptionsButton({
-		["Name"] = "DinoExploit",
-		["Function"] = function(callback)
-			if callback then 
-				game:GetService("ReplicatedStorage"):FindFirstChild("events-@easy-games/game-core:shared/game-core-networking@getEvents.Events").useAbility:FireServer("dino_charge")
-				task.spawn(function()
-					if GuiLibrary["MainGui"]:FindFirstChild("bar") then return end
-					if lplr.Character then 
-						lplr.Character:SetAttribute("SpeedBoost", 3)
-						local allowed = true
-						dinoconnection = bedwars["ClientHandler"]:Get(bedwars["DinoRemote"]):Connect(function(tab)
-							if tab.player == lplr then 
-								if lplr.Character then 
-									lplr.Character:SetAttribute("SpeedBoost", nil)
-								end
-								allowed = false
-								dinoconnection:Disconnect()
-							end
-						end)
-						task.delay(10, function()
-							if lplr.Character and allowed then 
-								lplr.Character:SetAttribute("SpeedBoost", nil)
-							end
-							if dinoconnection then dinoconnection:Disconnect() end
-						end)
-					end
-					local bar = Instance.new("Frame")
-					bar.Size = UDim2.new(0.3, 0, 0, 10)
-					bar.AnchorPoint = Vector2.new(0.5, 0.5)
-					bar.BorderSizePixel = 0
-					bar.BackgroundTransparency = 0.5
-					bar.BackgroundColor3 = Color3.new()
-					bar.Position = UDim2.new(0.5, 0, 0.75, 0)
-					bar.Name = "bar"
-					bar.Parent = GuiLibrary["MainGui"]
-					local bar2 = bar:Clone()
-					bar2.Size = UDim2.new(1, 0, 1, 0)
-					bar2.AnchorPoint = Vector2.new(0, 0)
-					bar2.Position = UDim2.new(0, 0, 0, 0)
-					bar2.BackgroundTransparency = 0
-					bar2.BackgroundColor3 = Color3.new(1, 1, 1)
-					bar2.Parent = bar
-					bar2:TweenSize(UDim2.new(0, 0, 1, 0), Enum.EasingDirection.InOut, Enum.EasingStyle.Linear, 60)
-					task.wait(60)
-					bar:Destroy()
-				end)
-				DinoExploit["ToggleButton"](false)
 			end
 		end
 	})
@@ -6006,41 +5951,6 @@ runcode(function()
 end)
 
 runcode(function()
-	local Multiaura = {["Enabled"] = false}
-    Multiaura = GuiLibrary["ObjectsThatCanBeSaved"]["BlatantWindow"]["Api"].CreateOptionsButton({
-        ["Name"] = "MultiAura",
-        ["Function"] = function(callback)
-            if callback then
-                task.spawn(function()
-					repeat
-						task.wait(0.03)
-						if (GuiLibrary["ObjectsThatCanBeSaved"]["Lobby CheckToggle"]["Api"]["Enabled"] == false or matchState ~= 0) and Multiaura["Enabled"] then
-							local plrs = GetAllNearestHumanoidToPosition(true, (MultiauraVal), 1000)
-							for i,plr in pairs(plrs) do
-								local plrtype, plrattackable = WhitelistFunctions:CheckPlayerType(plr.Player)
-								if plrattackable then 
-									local selfpos = entity.character.HumanoidRootPart.Position
-									local newpos = plr.RootPart.Position
-									bedwars["ClientHandler"]:Get(bedwars["PaintRemote"]):SendToServer(selfpos, CFrame.lookAt(selfpos, newpos).lookVector)
-								end
-							end
-						end
-					until Multiaura["Enabled"] == false
-				end)
-            end
-        end,
-        ["HoverText"] = "Attack players around you\nwithout aiming at them."
-    })
-    MultiauraVal = Multiaura.CreateSlider({
-		["Name"] = "Range",
-		["Min"] = 20,
-		["Max"] = 200,
-		["Default"] = 20,
-		["Function"] = function() end
-	})
-end)
-
-runcode(function()
 	local BowAura = {["Enabled"] = false}
 	local BowAuraRange = {["Value"] = 40}
 	BowAura = GuiLibrary["ObjectsThatCanBeSaved"]["BlatantWindow"]["Api"].CreateOptionsButton({
@@ -7547,6 +7457,273 @@ runcode(function()
 		["Function"] = function() end, 
 		["Default"] = true,
 		["HoverText"] = "Pops balloons when fly is disabled."
+	})
+	local oldcamupdate
+	local camcontrol
+	local flydamagecamera = {["Enabled"] = false}
+	flydamageanim = fly.CreateToggle({
+		["Name"] = "Damage Animation",
+		["Function"] = function(callback) 
+			if flydamagecamera["Object"] then 
+				flydamagecamera["Object"].Visible = callback
+			end
+			if callback then 
+				task.spawn(function()
+					repeat
+						task.wait(0.1)
+						for i,v in pairs(getconnections(cam:GetPropertyChangedSignal("CameraType"))) do 
+							if v.Function then
+								camcontrol = debug.getupvalue(v.Function, 1)
+							end
+						end
+					until camcontrol
+					local caminput = require(game:GetService("Players").LocalPlayer.PlayerScripts.PlayerModule.CameraModule.CameraInput)
+					local num = Instance.new("IntValue")
+					local numanim
+					shared.damageanim = function()
+						if numanim then numanim:Cancel() end
+						if flydamagecamera["Enabled"] then
+							num.Value = 1000
+							numanim = game:GetService("TweenService"):Create(num, TweenInfo.new(0.5), {Value = 0})
+							numanim:Play()
+						end
+					end
+					oldcamupdate = camcontrol.Update
+					camcontrol.Update = function(self, dt) 
+						if camcontrol.activeCameraController then
+							camcontrol.activeCameraController:UpdateMouseBehavior()
+							local newCameraCFrame, newCameraFocus = camcontrol.activeCameraController:Update(dt)
+							cam.CFrame = newCameraCFrame * CFrame.Angles(0, 0, math.rad(num.Value / 100))
+							cam.Focus = newCameraFocus
+							if camcontrol.activeTransparencyController then
+								camcontrol.activeTransparencyController:Update(dt)
+							end
+							if caminput.getInputEnabled() then
+								caminput.resetInputForFrameEnd()
+							end
+						end
+					end
+				end)
+			else
+				shared.damageanim = nil
+				if camcontrol then 
+					camcontrol.Update = oldcamupdate
+				end
+			end
+		end
+	})
+	flydamagecamera = fly.CreateToggle({
+		["Name"] = "Camera Animation",
+		["Function"] = function() end,
+		["Default"] = true
+	})
+	flydamagecamera["Object"].BorderSizePixel = 0
+	flydamagecamera["Object"].BackgroundTransparency = 0
+	flydamagecamera["Object"].BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+	flydamagecamera["Object"].Visible = false
+	flyac = fly.CreateToggle({
+		["Name"] = "Fly Anyway",
+		["Function"] = function(callback) 
+			if flyspeedboost["Object"] then 
+				flyspeedboost["Object"].Visible = callback
+			end
+			if flyacprogressbar["Object"] then 
+				flyacprogressbar["Object"].Visible = callback
+			end
+
+		end,
+		["HoverText"] = "Enables fly without balloons for 1.4s",
+		["Default"] = true
+	})
+	flyspeedboost = fly.CreateToggle({
+		["Name"] = "Boost Speed",
+		["Function"] = function() end,
+		["HoverText"] = "boosts fly anyway speed",
+	})
+	flyspeedboost["Object"].BorderSizePixel = 0
+	flyspeedboost["Object"].BackgroundTransparency = 0
+	flyspeedboost["Object"].BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+	flyspeedboost["Object"].Visible = false
+	flyacprogressbar = fly.CreateToggle({
+		["Name"] = "Progress Bar",
+		["Function"] = function(callback) 
+			if callback then 
+				flyacprogressbarframe = Instance.new("Frame")
+				flyacprogressbarframe.AnchorPoint = Vector2.new(0.5, 0)
+				flyacprogressbarframe.Position = UDim2.new(0.5, 0, 1, -200)
+				flyacprogressbarframe.Size = UDim2.new(0.2, 0, 0, 20)
+				flyacprogressbarframe.BackgroundTransparency = 0.5
+				flyacprogressbarframe.BorderSizePixel = 0
+				flyacprogressbarframe.BackgroundColor3 = Color3.new(0, 0, 0)
+				flyacprogressbarframe.Visible = fly["Enabled"]
+				flyacprogressbarframe.Parent = GuiLibrary["MainGui"]
+				local flyacprogressbarframe2 = flyacprogressbarframe:Clone()
+				flyacprogressbarframe2.AnchorPoint = Vector2.new(0, 0)
+				flyacprogressbarframe2.Position = UDim2.new(0, 0, 0, 0)
+				flyacprogressbarframe2.Size = UDim2.new(1, 0, 0, 20)
+				flyacprogressbarframe2.BackgroundTransparency = 0
+				flyacprogressbarframe2.Visible = true
+				flyacprogressbarframe2.BackgroundColor3 = Color3.new(0.9, 0.9, 0.9)
+				flyacprogressbarframe2.Parent = flyacprogressbarframe
+				local flyacprogressbartext = Instance.new("TextLabel")
+				flyacprogressbartext.Text = "2s"
+				flyacprogressbartext.Font = Enum.Font.Gotham
+				flyacprogressbartext.TextStrokeTransparency = 0
+				flyacprogressbartext.TextColor3 =  Color3.new(0.9, 0.9, 0.9)
+				flyacprogressbartext.TextSize = 20
+				flyacprogressbartext.Size = UDim2.new(1, 0, 1, 0)
+				flyacprogressbartext.BackgroundTransparency = 1
+				flyacprogressbartext.Position = UDim2.new(0, 0, -1, 0)
+				flyacprogressbartext.Parent = flyacprogressbarframe
+			else
+				if flyacprogressbarframe then flyacprogressbarframe:Remove() flyacprogressbarframe = nil end
+			end
+		end,
+		["HoverText"] = "show amount of fly time",
+		["Default"] = true
+	})
+	flyacprogressbar["Object"].BorderSizePixel = 0
+	flyacprogressbar["Object"].BackgroundTransparency = 0
+	flyacprogressbar["Object"].BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+	flyacprogressbar["Object"].Visible = false
+end)
+
+	flyv2 = GuiLibrary["ObjectsThatCanBeSaved"]["BlatantWindow"]["Api"].CreateOptionsButton({
+		["Name"] = "Fly2",
+		["Function"] = function(callback)
+			if callback then
+				olddeflate = bedwars["BalloonController"]["deflateBalloon"]
+				bedwars["BalloonController"]["deflateBalloon"] = function() end
+				flypress = uis.InputBegan:Connect(function(input1)
+					if flyupanddown["Enabled"] and bettergetfocus() == nil then
+						if input1.KeyCode == Enum.KeyCode.Space or input1.KeyCode == Enum.KeyCode.ButtonA then
+							flyup = true
+						end
+						if input1.KeyCode == Enum.KeyCode.LeftShift or input1.KeyCode == Enum.KeyCode.ButtonL2 then
+							flydown = true
+						end
+					end
+				end)
+				flyendpress = uis.InputEnded:Connect(function(input1)
+					if input1.KeyCode == Enum.KeyCode.Space or input1.KeyCode == Enum.KeyCode.ButtonA then
+						flyup = false
+					end
+					if input1.KeyCode == Enum.KeyCode.LeftShift or input1.KeyCode == Enum.KeyCode.ButtonL2 then
+						flydown = false
+					end
+				end)
+				local balloons
+				if entity.isAlive and (queueType and (not queueType:find("mega"))) then
+					balloons = buyballoons()
+				end
+				local megacheck = queueType and queueType:find("mega") and true or false
+				task.spawn(function()
+					repeat task.wait() until queueType ~= "bedwars_test" or (not fly["Enabled"])
+					if not fly["Enabled"] then return end
+					megacheck = queueType and queueType:find("mega") and true or false
+				end)
+				local allowed = entity.isAlive and ((lplr.Character:GetAttribute("InflatedBalloons") and lplr.Character:GetAttribute("InflatedBalloons") > 0) or matchState == 2 or megacheck) and 1 or 0
+				if flyac["Enabled"] and allowed <= 0 and shared.damageanim and (not balloons) then 
+					shared.damageanim()
+					bedwars["SoundManager"]:playSound(bedwars["SoundList"]["DAMAGE_"..math.random(1, 3)])
+				end
+				if flyacprogressbarframe and allowed <= 0 and (not balloons) then 
+					flyacprogressbarframe.Visible = true
+					flyacprogressbarframe.Frame:TweenSize(UDim2.new(1, 0, 0, 20), Enum.EasingDirection.InOut, Enum.EasingStyle.Linear, 0, true)
+				end
+				local firsttoggled = true
+				RunLoops:BindToHeartbeat("Fly", 1, function(delta) 
+					if entity.isAlive and (GuiLibrary["ObjectsThatCanBeSaved"]["Lobby CheckToggle"]["Api"]["Enabled"] == false or matchState ~= 0) then
+						allowed = ((lplr.Character:GetAttribute("InflatedBalloons") and lplr.Character:GetAttribute("InflatedBalloons") > 0) or matchState == 2 or megacheck) and 1 or 0
+						local mass = (entity.character.HumanoidRootPart:GetMass() - 1.4) * (delta * 100)
+						local realflyspeed = flyspeed["Value"]
+						mass = mass + (allowed > 0 and 10 or 2.3) * (flytog and -1 or 1)
+						if flytogtick <= tick() then
+							flytog = not flytog
+							flytogtick = tick() + (allowed > 0 and 0.2 or 0.06)
+						end
+						if flyacprogressbarframe then
+							flyacprogressbarframe.Visible = allowed <= 0
+						end
+						flyboosting = flyac["Enabled"] and flyspeedboost["Enabled"] and allowed <= 0 
+						if flyac["Enabled"] and allowed <= 0 then 
+							local newray = getblock(entity.character.HumanoidRootPart.Position + Vector3.new(0, (entity.character.Humanoid.HipHeight * -2) - 1, 0))
+							onground = newray and true or false
+							if firsttoggled then 
+								lastonground = not onground
+								firsttoggled = false
+							end
+							if lastonground ~= onground then 
+								if (not onground) then 
+									groundtime = tick() + 5
+									if flyacprogressbarframe then 
+										flyacprogressbarframe.Frame:TweenSize(UDim2.new(0, 0, 0, 20), Enum.EasingDirection.InOut, Enum.EasingStyle.Linear, groundtime - tick(), true)
+									end
+								else
+									if flyacprogressbarframe then 
+										flyacprogressbarframe.Frame:TweenSize(UDim2.new(1, 0, 0, 20), Enum.EasingDirection.InOut, Enum.EasingStyle.Linear, 0, true)
+									end
+								end
+							end
+							if groundtime <= tick() and (not onground) then 
+								if fly["Enabled"] then 
+									fly["ToggleButton"](false)
+								end
+							end
+							if flyacprogressbarframe then 
+								flyacprogressbarframe.TextLabel.Text = math.max(onground and 5 or math.floor((groundtime - tick()) * 10) / 10, 0).."s"
+							end
+							lastonground = onground
+							allowed = 1
+							if flyspeedboost["Enabled"] then
+ 								realflyspeed = realflyspeed * getSpeedMultiplier(true)
+							end
+						else
+							onground = true
+							lastonground = true
+							realflyspeed = realflyspeed * getSpeedMultiplier(true)
+						end
+						if flymode["Value"] == "CFrame" then
+							entity.character.HumanoidRootPart.CFrame = entity.character.HumanoidRootPart.CFrame + flypos2
+						end
+						flyvelo = flypos + Vector3.new(0, mass + (flyup and flyverticalspeed["Value"] or 0) + (flydown and -flyverticalspeed["Value"] or 0), 0)
+						if slowdowntick <= tick() + 0.8 then 
+							slowdowntick = tick() + 0.75
+						end
+					end
+				end)
+			else
+				flyup = false
+				flydown = false
+				autobankballoon = false
+				waitingforballoon = false
+				flypress:Disconnect()
+				flyendpress:Disconnect()
+				RunLoops:UnbindFromHeartbeat("Fly")
+				if flyacprogressbarframe then 
+					flyacprogressbarframe.Visible = false
+				end
+			end
+		end,
+		["HoverText"] = "Another fly toggle for TNT fly",
+		["ExtraText"] = function() 
+			if GuiLibrary["ObjectsThatCanBeSaved"]["Text GUIAlternate TextToggle"]["Api"]["Enabled"] then 
+				return alternatelist[table.find(flymode["List"], flymode["Value"])]
+			end
+			return flymode["Value"] 
+		end
+	})
+	flymodev2 = fly.CreateDropdown({
+		["Name"] = "Mode",
+		["List"] = {"CFrame"},
+		["Function"] = function() end
+	})
+	flyspeedv2 = fly.CreateSlider({
+		["Name"] = "Speed",
+		["Min"] = 54,
+		["Max"] = 74,
+		["Function"] = function(val) end, 
+		["Default"] = 74
 	})
 	local oldcamupdate
 	local camcontrol
@@ -10983,72 +11160,7 @@ runcode(function()
 			end
 		end
 	})
-	local ServerCrasher2 = {["Enabled"] = false}
-	ServerCrasher2 = GuiLibrary["ObjectsThatCanBeSaved"]["UtilityWindow"]["Api"].CreateOptionsButton({
-		["Name"] = "LagbackAll",
-		["Function"] = function(callback)
-			if callback then
-				if WhitelistFunctions:IsSpecialIngame() and WhitelistFunctions:CheckPlayerType(lplr) == "DEFAULT" then 
-					createwarning("LagbackAllLoop", "no", 10)
-					ServerCrasher2["ToggleButton"](false)
-					return
-				end
-				task.spawn(function()
-					if not trollage then 
-						trollage = {}
-						local lasttbl
-						for i = 1,150000 do
-							trollage[#trollage+1] = (lasttbl or {})
-							lasttbl = trollage[#trollage]
-						end
-					end
-					for i = 1, 15 do 
-						task.wait(0.3)
-						task.spawn(function() 
-							pcall(function() remote:CallServer(trollage) end)
-						end)
-					end
-				end)
-				ServerCrasher2["ToggleButton"](false)
-			end
-		end
-	})
-end)
-
-runcode(function()
-	local Disabler = {["Enabled"] = false}
-	Disabler = GuiLibrary["ObjectsThatCanBeSaved"]["UtilityWindow"]["Api"].CreateOptionsButton({
-		["Name"] = "AnticheatDisabler",
-		["Function"] = function(callback)
-			if callback then
-				if WhitelistFunctions:IsSpecialIngame() and WhitelistFunctions:CheckPlayerType(lplr) == "DEFAULT" then 
-					createwarning("Disabler", "no", 10)
-					Disabler["ToggleButton"](false)
-					return
-				end
-				if (matchState == 0 or lplr.Character:FindFirstChildWhichIsA("ForceField")) then
-					task.spawn(function()
-						entity.character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
-						entity.character.Humanoid:ChangeState(Enum.HumanoidStateType.Dead)
-						repeat task.wait() until entity.character.Humanoid.MoveDirection ~= Vector3.zero
-						task.wait(0.2)
-						entity.character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-						entity.character.Humanoid:ChangeState(Enum.HumanoidStateType.Running)
-						workspace.Gravity = 192.6
-						createwarning("AnticheatDisabler", "Disabled Anticheat!", 10)
-					end)
-				else
-					local warning = createwarning("AnticheatDisabler", "Failed to disable\ndo it during respawn\nor in pregame / spawn box", 10)
-					pcall(function()
-						warning:GetChildren()[5].Position = UDim2.new(0, 46, 0, 32)
-					end)
-				end
-				Disabler["ToggleButton"](false)
-			end
-		end
-	})
-end)
-
+	
 runcode(function()
 	local NoNameTag = {["Enabled"] = false}
 	local connection
