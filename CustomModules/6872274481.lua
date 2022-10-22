@@ -3992,10 +3992,10 @@ runcode(function()
 				balloon.Name = "balloon"
 				balloon.Parent = autobankui
                                 local fireball = emerald:Clone()
-				balloon.Image = bedwars["getIcon"]({itemType = "fireball"}, true)
-				balloon.Position = UDim2.new(0, 240, 0, 0)
-				balloon.Name = "fireball"
-				balloon.Parent = autobankui
+				fireball.Image = bedwars["getIcon"]({itemType = "fireball"}, true)
+				fireball.Position = UDim2.new(0, 240, 0, 0)
+				fireball.Name = "fireball"
+				fireball.Parent = autobankui
 				local echest = repstorage.Inventories:FindFirstChild(lplr.Name.."_personal")
 				if entity.isAlive and echest then
 					local chestitems = currentinventory.inventory.items
